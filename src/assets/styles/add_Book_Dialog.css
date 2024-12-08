@@ -1,0 +1,102 @@
+/* 只影响具有 custom-dialog 类的对话框 */
+.custom-dialog {
+    position: fixed; /* 固定定位，确保对话框始终在屏幕上可见 */
+    top: 50%; /* 将对话框的顶部位置设置为页面的垂直中心 */
+    left: 50%; /* 将对话框的左侧位置设置为页面的水平中心 */
+    transform: translate(-50%, -50%); /* 使用 transform 属性将对话框移到屏幕的正中央 */
+    width: 400px; /* 设置对话框的宽度 */
+    padding: 30px; /* 对话框的内边距 */
+    background: linear-gradient(135deg, #dd69cd, #2575fc); /* 渐变背景，从紫色到蓝色 */
+    color: #fff; /* 设置文字颜色为白色 */
+    border-radius: 15px; /* 圆角边框，使对话框的四个角弯曲 */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* 阴影效果，让对话框浮动起来 */
+    z-index: 1000; /* 确保对话框在页面上方显示，覆盖其他元素 */
+    display: flex; /* 使用 flexbox 布局 */
+    flex-direction: column; /* 将子元素垂直排列 */
+    align-items: center; /* 水平居中对话框的内容 */
+    justify-content: center; /* 垂直居中对话框的内容 */
+}
+
+.custom-dialog h3 {
+    margin-bottom: 20px; /* 设置标题与内容的间距 */
+    font-size: 24px; /* 设置标题字体的大小 */
+    font-weight: bold; /* 设置标题字体为粗体 */
+    color: #fff; /* 标题的字体颜色为白色 */
+    text-align: center; /* 标题居中显示 */
+}
+
+.custom-dialog form {
+    width: 100%; /* 表单宽度占满父容器 */
+    display: flex; /* 使用 flexbox 布局 */
+    flex-direction: column; /* 表单项垂直排列 */
+}
+
+.custom-dialog form div {
+    margin-bottom: 15px; /* 每个表单项之间的垂直间距 */
+}
+
+.custom-dialog label {
+    font-size: 15px; /* 标签文字的大小 */
+    font-weight: 500; /* 标签文字的字体粗细 */
+    margin-bottom: 5px; /* 标签和输入框之间的间距 */
+    display: inline-block; /* 使标签与输入框对齐 */
+}
+
+.custom-dialog input,
+.custom-dialog select {
+    width: 85%; /* 输入框和选择框的宽度 */
+    padding: 8px; /* 输入框和选择框的内边距 */
+    border-radius: 10px; /* 圆角边框 */
+    border: 1px solid #ddd; /* 边框颜色为灰色 */
+    background-color: #f9f9f9; /* 背景颜色为淡灰色 */
+    font-size: 16px; /* 输入框字体大小 */
+    color: #333; /* 输入框字体颜色 */
+    transition: all 0.3s ease-in-out; /* 过渡效果，使样式变化更加平滑 */
+}
+
+/* 聚焦时的效果，改变边框颜色和背景颜色 */
+.custom-dialog input:focus,
+.custom-dialog select:focus {
+    border-color: #2575fc; /* 聚焦时边框变为蓝色 */
+    outline: none; /* 去除聚焦时的默认外边框 */
+    background-color: #e6f0ff; /* 聚焦时输入框的背景变为淡蓝色 */
+}
+
+.custom-dialog button {
+    padding: 12px 20px; /* 按钮的内边距 */
+    font-size: 16px; /* 按钮字体大小 */
+    font-weight: bold; /* 按钮字体粗细 */
+    border: none; /* 去除按钮的默认边框 */
+    border-radius: 25px; /* 圆角按钮 */
+    background-color: #2575fc; /* 按钮背景颜色为蓝色 */
+    color: white; /* 按钮文字颜色为白色 */
+    cursor: pointer; /* 鼠标悬停时显示为指针 */
+    transition: all 0.3s ease; /* 按钮的过渡效果 */
+    margin-top: 20px; /* 按钮与其他元素之间的间距 */
+}
+
+/* 按钮悬停时的效果，背景色变为紫色 */
+.custom-dialog button:hover {
+    background-color: #11cbaf;
+}
+
+/* 按钮按下时的效果，背景色变为深紫色 */
+.custom-dialog button:active {
+    background-color: #5a0e99;
+}
+
+/* 取消按钮的样式 */
+.custom-dialog .cancel-btn {
+    background-color: #ff4f58; /* 背景颜色为红色 */
+    margin-top: 10px; /* 与其他按钮的间距 */
+}
+
+/* 取消按钮悬停时的效果，背景色变为深红色 */
+.custom-dialog .cancel-btn:hover {
+    background-color: #e02b39;
+}
+
+/* 按钮之间的间距 */
+.custom-dialog button + button {
+    margin-top: 10px; /* 使多个按钮之间有间隔 */
+}
