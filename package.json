@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-
   "scripts": {
     "build": "vite build",
     "serve": "vite preview",
@@ -13,19 +12,24 @@
     "dev": "concurrently \"npm run frontend\" \"npm run backend\"",
     "start": "node server.js"
   },
-
   "private": true,
   "dependencies": {
     "axios": "^1.7.9",
+    "chart.js": "^4.4.7",
+    "color": "^4.2.3",
     "cors": "^2.8.5",
+    "crypto-js": "^4.2.0",
     "element-plus": "^2.9.0",
     "express": "^4.21.2",
+    "gsap": "^3.12.5",
+    "mqtt": "^5.10.3",
     "mysql": "^2.18.1",
     "vue": "^3.5.13",
+    "vue-chartjs": "^5.3.2",
     "vue-router": "^4.5.0",
-    "vuex": "^4.1.0"
+    "vuex": "^4.1.0",
+    "ws": "^8.18.0"
   },
-
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.0.0",
     "concurrently": "^9.1.0",
