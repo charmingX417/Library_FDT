@@ -5,9 +5,13 @@ import BorrowManagement from './views/BorrowManagement.vue';
 import ReturnManagement from './views/ReturnManagement.vue';
 import SearchPage from './views/SearchPage.vue';
 import BackupRestorePage from './views/BackupRestorePage.vue';
+import Login from './views/Login.vue';
+import Register from './views/Register.vue';  // 注册页面引入
 
 const routes = [
-    { path: "/", redirect: "/home" },
+    { path: "/", redirect: "/login" },
+    { path: '/login', component: Login },
+    { path: '/register', component: Register }, // 注册页面
     { path: '/home', component: Home },
     { path: '/book-management', component: BookManagement },
     { path: '/borrow-management', component: BorrowManagement },
@@ -21,15 +25,23 @@ const router = createRouter({
     routes
 });
 
-// 在路由守卫中显示加载动画
 router.beforeEach((to, from, next) => {
-    // 这里我们不再使用 document.querySelector 操作 DOM，而是通过 app 组件中的 isLoading 来控制
-    next();
+    const isLoggedIn = localStorage.getItem('isLoggedIn');
+
+    if (to.path === '/login' || to.path === '/register') {
+        next();
+        return;
+    }
+
+    if (!isLoggedIn) {
+        next('/login'); // 未登录，跳转到登录页
+    } else {
+        next(); // 已登录，正常跳转
+    }
 });
 
 router.afterEach(() => {
-    // 页面导航完成时隐藏加载动画
-    // 可以考虑在这里设置 `isLoading.value = false;` 或类似逻辑
+    // 页面导航完成后执行的操作（如隐藏加载动画等）
 });
 
 export default router;

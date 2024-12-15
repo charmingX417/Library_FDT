@@ -1,8 +1,24 @@
 <template>
   <!-- 表格显示部分 -->
-  <el-table :data="paginatedBooks" border style="width: 100%" max-height="600px">
+  <el-table :data="paginatedBooks" border style="width: 100%" max-height="600px"  :row-style="{'height': '120px'}">
     <!-- 表格列：编号 -->
     <el-table-column prop="id" label="编号" min-width="80"></el-table-column>
+
+    <!-- 表格列：封面图片 -->
+    <el-table-column label="封面图片" min-width="100">
+      <template v-slot="scope">
+        <el-image
+            v-if="scope.row.img"
+            :src="scope.row.img"
+            alt="封面图片"
+            style="width: 70px; height: 100px; object-fit: cover;"
+            fit="cover"
+            lazy
+        ></el-image>
+        <span v-else>暂无图片</span>
+      </template>
+    </el-table-column>
+
 
     <!-- 表格列：书名 -->
     <el-table-column label="书名" min-width="180">
@@ -74,6 +90,8 @@
         </template>
       </template>
     </el-table-column>
+
+
 
     <!-- 表格列：操作 -->
     <el-table-column label="操作" min-width="200">
@@ -152,6 +170,10 @@
           </select>
         </div>
         <div>
+          <label for="img">封面图片地址</label>
+          <input type="text" id="img" v-model="newBook.img" placeholder="请输入图片地址" />
+        </div>
+        <div>
           <button type="submit">添加</button>
           <button type="button" @click="addDialogVisible = false">取消</button>
         </div>
@@ -177,6 +199,7 @@ export default {
         author: "",
         isbn: "",
         category: "文学",
+        img: "" // 新增图片字段
       },
       categoryOptions: [
         { label: "文学", value: "文学" },
@@ -226,15 +249,12 @@ export default {
         ...this.newBook,
         author: this.newBook.author || null,
         isbn: this.newBook.isbn || null,
+        img: this.newBook.img || null, // 图片地址
       };
 
       try {
-        // 向后端发送请求以添加书籍
-        // 添加书籍时，使用编号作为路径的一部分
         const response = await axios.post(`http://localhost:3000/api/books/${this.nextBookId}`, bookToAdd);
 
-
-        // 如果添加成功，将新书籍推入书籍列表并更新编号
         if (response.data) {
           this.books.push({ ...response.data, editing: false });
           this.addDialogVisible = false;
@@ -249,8 +269,9 @@ export default {
       }
     },
     resetNewBook() {
-      this.newBook = { title: "", author: "", isbn: "", category: "文学" };
+      this.newBook = { title: "", author: "", isbn: "", category: "文学", img: "" };
     },
+
     editBook(book) {
       book.editing = true;
     },

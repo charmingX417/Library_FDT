@@ -4,7 +4,7 @@ const mysql = require('mysql');
 const cors = require('cors'); // 解决跨域
 const bodyParser = require('body-parser'); // 解析 JSON 请求体
 const axios = require('axios');
-
+const bcrypt = require('bcrypt');
 const app = express();
 const port = 3000;
 
@@ -124,9 +124,9 @@ app.delete('/api/books/:id', (req, res) => {
 // 插入书籍的辅助函数
 const insertBook = (book) => {
     return new Promise((resolve, reject) => {
-        const { title, author_name, isbn, catalog } = book;
-        const sql = 'INSERT INTO books (title, author, isbn, category) VALUES (?, ?, ?, ?)';
-        const values = [title, author_name || null, isbn || null, catalog || null];
+        const { title, img, category, reading } = book;
+        const sql = 'INSERT INTO books (title, img, category, reading) VALUES (?, ?, ?, ?)';
+        const values = [title, img || null, category || null, reading || null];
 
         db.query(sql, values, (err) => {
             if (err) {
@@ -138,12 +138,12 @@ const insertBook = (book) => {
         });
     });
 };
-// API 路由：调用外部 API 并存储数据(手动操作)
+// API 路由：调用外部 API 并存储数据
 app.get('/api/fetchBooksFromAPI', async (req, res) => {
     const apiKey = '1c46650dc15cf913272974d27e608cb4'; // 替换为你的 API 密钥
-    const catalogId = 249; // 示例分类 ID，手动设置
+    const catalogId = 247; // 示例分类 ID，手动设置
     const pn = 1; // 页码
-    const rn = 10; // 每页返回的记录数
+    const rn = 20; // 每页返回的记录数
     const dtype = 'json'; // 返回数据格式，默认为 JSON
 
     const apiUrl = 'http://apis.juhe.cn/goodbook/query';
@@ -167,7 +167,17 @@ app.get('/api/fetchBooksFromAPI', async (req, res) => {
         }
 
         const books = result.data;
-        const insertPromises = books.map(book => insertBook(book));
+
+        // 提取每本书的数据并封装成对象
+        const insertPromises = books.map(book => {
+            const extractedData = {
+                title: book.title,               // 书名
+                img: book.img,                   // 图片
+                category: book.catalog,          // 分类作为 category
+                reading: book.reading            // 阅读人数
+            };
+            return insertBook(extractedData);  // 调用插入书籍的辅助函数
+        });
 
         // 等待所有插入操作完成
         await Promise.all(insertPromises);
@@ -178,6 +188,8 @@ app.get('/api/fetchBooksFromAPI', async (req, res) => {
     }
 });
 
+
+//服务器每 30 秒向客户端推送最新的书籍分类统计数据。
 app.get('/api/streamBooks', (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -209,6 +221,141 @@ app.get('/api/streamBooks', (req, res) => {
     });
 });
 
+
+// 用户登录接口
+app.post('/api/login', (req, res) => {
+    const { username, password } = req.body;
+
+    // 查询用户账号密码
+    const userQuery = 'SELECT * FROM users WHERE username = ?';
+    db.query(userQuery, [username], async (err, userResults) => {
+        if (err) {
+            console.error('查询用户失败:', err);
+            return res.status(500).send('服务器错误');
+        }
+
+        if (userResults.length === 0) {
+            return res.status(404).send('用户名不存在');
+        }
+
+        const user = userResults[0];
+
+        // 检查密码是否匹配
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(401).send('密码错误');
+        }
+
+        // 返回用户信息或其他必要数据
+        res.json({
+            user: {
+                id: user.id,
+                username: user.username,
+            },
+        });
+    });
+});
+// 借书接口
+app.post('/api/borrowBook', (req, res) => {
+    const { userId, bookId } = req.body;
+
+    // 查询用户已借书数量
+    const borrowCountQuery = 'SELECT COUNT(*) AS count FROM borrowed_books WHERE user_id = ?';
+    db.query(borrowCountQuery, [userId], (err, countResults) => {
+        if (err) {
+            console.error('查询借书数量失败:', err);
+            return res.status(500).send('服务器错误');
+        }
+
+        const borrowedCount = countResults[0].count;
+
+        if (borrowedCount >= 5) {
+            return res.status(400).send('借书数量已达到上限（5 本）');
+        }
+
+        // 检查书籍是否已借出
+        const bookAvailabilityQuery = 'SELECT * FROM borrowed_books WHERE book_id = ?';
+        db.query(bookAvailabilityQuery, [bookId], (err, bookResults) => {
+            if (err) {
+                console.error('查询书籍状态失败:', err);
+                return res.status(500).send('服务器错误');
+            }
+
+            if (bookResults.length > 0) {
+                return res.status(400).send('书籍已被借出');
+            }
+
+            // 插入借书记录
+            const borrowInsertQuery = 'INSERT INTO borrowed_books (user_id, book_id) VALUES (?, ?)';
+            db.query(borrowInsertQuery, [userId, bookId], (err) => {
+                if (err) {
+                    console.error('借书失败:', err);
+                    return res.status(500).send('服务器错误');
+                }
+
+                res.status(200).send('借书成功');
+            });
+        });
+    });
+});
+// 还书接口
+app.post('/api/returnBook', (req, res) => {
+    const { userId, bookId } = req.body;
+
+    const returnQuery = 'DELETE FROM borrowed_books WHERE user_id = ? AND book_id = ?';
+    db.query(returnQuery, [userId, bookId], (err, result) => {
+        if (err) {
+            console.error('还书失败:', err);
+            return res.status(500).send('服务器错误');
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(400).send('未找到对应的借书记录');
+        }
+
+        res.status(200).send('还书成功');
+    });
+});
+// 用户注册接口
+app.post('/api/register', async (req, res) => {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+        return res.status(400).send('用户名和密码不能为空');
+    }
+
+    // 检查用户名是否已存在
+    const checkUserQuery = 'SELECT * FROM users WHERE username = ?';
+    db.query(checkUserQuery, [username], async (err, results) => {
+        if (err) {
+            console.error('检查用户名失败:', err);
+            return res.status(500).send('服务器错误');
+        }
+
+        if (results.length > 0) {
+            return res.status(400).send('用户名已被注册');
+        }
+
+        try {
+            // 使用 bcrypt 加密密码
+            const hashedPassword = await bcrypt.hash(password, 10);
+
+            // 插入新用户
+            const insertUserQuery = 'INSERT INTO users (username, password) VALUES (?, ?)';
+            db.query(insertUserQuery, [username, hashedPassword], (err) => {
+                if (err) {
+                    console.error('注册失败:', err);
+                    return res.status(500).send('服务器错误');
+                }
+
+                res.status(200).send('注册成功');
+            });
+        } catch (hashError) {
+            console.error('密码加密失败:', hashError);
+            res.status(500).send('服务器错误');
+        }
+    });
+});
 
 // 启动服务器
 app.listen(port, () => {

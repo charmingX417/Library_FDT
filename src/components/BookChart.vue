@@ -1,7 +1,17 @@
 <template>
   <div class="chart-container">
-    <Doughnut :data="chartData" :options="chartOptions" v-if="chartData.labels.length > 0" />
+    <Doughnut
+        :key="chartData.labels.join('-')"
+        :data="chartData"
+        :options="chartOptions"
+        v-if="chartData.labels.length > 0"
+    />
     <p v-else>Loading data...</p>
+
+    <!-- 显示总书本数 -->
+    <div v-if="isDataLoaded" class="total-books">
+      <h3>总书本数: {{ totalBooks }} 本</h3>
+    </div>
   </div>
 </template>
 
@@ -21,27 +31,6 @@ import axios from "axios";
 // 注册所有需要的 Chart.js 模块
 ChartJS.register(Title, Tooltip, Legend, ArcElement, CategoryScale, LinearScale);
 
-// 定义自定义插件
-const CenterTextPlugin = {
-  id: "centerText",
-  beforeDraw(chart) {
-    const { ctx, chartArea: { width, height } } = chart;
-
-    // 获取总书本数量
-    const totalBooks = chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-
-    // 绘制文本
-    ctx.save();
-    ctx.font = "bold 16px Arial";
-    ctx.fillStyle = "#666";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("总书本数", width / 2, height / 2 - 10); // 主标题
-    ctx.fillText(totalBooks, width / 2, height / 2 + 10); // 数字
-    ctx.restore();
-  },
-};
-
 export default {
   name: "BookChart",
   components: {
@@ -55,32 +44,24 @@ export default {
           {
             label: "图书分类数量",
             data: [],
-            backgroundColor: [
-              "#FF6384",
-              "#36A2EB",
-              "#FFCE56",
-              "#42b983",
-              "#FF5722",
-              "#9C27B0",
-              "#FFC107",
-              "#4CAF50",
-            ],
+            backgroundColor: [], // 动态生成颜色
             borderWidth: 1,
           },
         ],
       },
+      totalBooks: 0, // 新增字段来存储总书本数
       chartOptions: {
         responsive: true,
-        maintainAspectRatio: false,
+        maintainAspectRatio: true,
         plugins: {
           legend: {
             display: true,
             position: "right",
             labels: {
-              boxWidth: 12,
+              boxWidth: 15,
               padding: 20,
               font: {
-                size: 12,
+                size: 15,
               },
             },
           },
@@ -97,53 +78,66 @@ export default {
           intersect: true,
         },
       },
+      isDataLoaded: false, // 数据加载完成标志
     };
   },
-  async created() {
-    try {
-      const response = await axios.get("http://localhost:3000/api/books");
-      if (response.data && Array.isArray(response.data)) {
-        const categoryCounts = {};
-        response.data.forEach((book) => {
-          const category = book.category;
-          if (category) {
-            if (!categoryCounts[category]) {
-              categoryCounts[category] = 0;
-            }
-            categoryCounts[category]++;
-          }
-        });
-
-        this.chartData = {
-          labels: Object.keys(categoryCounts),
-          datasets: [
-            {
-              label: "图书分类数量",
-              data: Object.values(categoryCounts),
-              backgroundColor: [
-                "#FF6384",
-                "#36A2EB",
-                "#FFCE56",
-                "#42b983",
-                "#FF5722",
-                "#9C27B0",
-                "#FFC107",
-                "#4CAF50",
-              ],
-              borderWidth: 1,
-            },
-          ],
-        };
-      } else {
-        console.error("数据加载失败，未获取到书籍数据");
-      }
-    } catch (error) {
-      console.error("请求错误:", error);
-    }
+  async mounted() {
+    // 在组件挂载时加载数据
+    await this.loadChartData();
   },
-  mounted() {
-    // 注册自定义插件
-    ChartJS.register(CenterTextPlugin);
+  watch: {
+    // 监听数据加载标志
+    isDataLoaded(newVal) {
+      if (newVal) {
+        this.$nextTick(() => {
+          this.$forceUpdate(); // 强制更新图表渲染
+        });
+      }
+    },
+  },
+  methods: {
+    // 动态生成颜色的方法
+    generateColors(count) {
+      const colors = [];
+      for (let i = 0; i < count; i++) {
+        const hue = (i * 360) / count; // 使用 HSL 色彩空间生成不同的颜色
+        colors.push(`hsl(${hue}, 70%, 60%)`);
+      }
+      return colors;
+    },
+
+    // 加载图表数据
+    async loadChartData() {
+      try {
+        const response = await axios.get("http://localhost:3000/api/books");
+        if (response.data && Array.isArray(response.data)) {
+          const categoryCounts = {};
+          response.data.forEach((book) => {
+            const category = book.category;
+            if (category) {
+              categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+            }
+          });
+
+          // 更新图表数据
+          this.chartData.labels = Object.keys(categoryCounts);
+          this.chartData.datasets[0].data = Object.values(categoryCounts);
+
+          // 动态生成背景颜色
+          this.chartData.datasets[0].backgroundColor = this.generateColors(Object.keys(categoryCounts).length);
+
+          // 计算总书本数
+          this.totalBooks = Object.values(categoryCounts).reduce((a, b) => a + b, 0);
+
+          // 数据加载完成后，通知组件更新
+          this.isDataLoaded = true;
+        } else {
+          console.error("数据加载失败，未获取到书籍数据");
+        }
+      } catch (error) {
+        console.error("请求错误:", error);
+      }
+    },
   },
 };
 </script>
@@ -151,22 +145,42 @@ export default {
 <style scoped>
 .chart-container {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  width: 100%;
-  height: 100%;
+  width: 75%;
+  max-width: 800px;
+  height: 400px;
   margin: 20px 0;
   border: none;
   box-shadow: none;
 }
 
+.total-books {
+  margin-top: 20px;
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+}
+
 .chart-container canvas {
-  border: none;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 @media (max-width: 768px) {
   .chart-container {
     height: 300px;
   }
+}
+
+.total-books {
+  margin-top: 1px;
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+  text-align: left; /* 确保文本居中 */
+  width: 50%; /* 保证占据100%宽度 */
 }
 </style>

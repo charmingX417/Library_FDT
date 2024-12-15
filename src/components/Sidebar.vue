@@ -14,13 +14,6 @@
         :active-text-color="menuActiveTextColor"
     >
       <el-menu-item
-          index="/home"
-          @mouseover="hover = 'home'"
-          @mouseleave="hover = null"
-          :style="getItemStyle('home', activeIndex === '/home')"
-          @click="handleMenuClick('/home')"
-      >首页</el-menu-item>
-      <el-menu-item
           index="/book-management"
           @mouseover="hover = 'book-management'"
           @mouseleave="hover = null"
@@ -118,6 +111,7 @@ export default {
 .sidebar {
   display: flex;
   flex-direction: column;
+  height: 100vh; /* 确保侧边栏高度覆盖整个视口 */
   transition: background-color 0.3s; /* 添加过渡效果 */
 }
 
@@ -141,7 +135,7 @@ export default {
 }
 
 .sidebar-header.dark {
-  background-color: #263238; /* 暗主题标题背景 */
+  background-color: #3a4a5a; /* 暗主题标题背景 */
   color: #ffd04b; /* 暗主题标题文字颜色 */
 }
 
