@@ -33,6 +33,7 @@ export default {
   },
   methods: {
     async handleLogin() {
+      console.log("登录方法被触发了");
       try {
         const response = await axios.post("http://localhost:3000/api/login", {
           username: this.username,
@@ -40,20 +41,27 @@ export default {
         });
 
         if (response.data) {
+          const userData = response.data; // 假设返回的数据包含用户信息
           if (this.rememberMe) {
-            // 存储登录状态和用户信息
-            localStorage.setItem("isLoggedIn", true);
+            localStorage.setItem("isLoggedIn", "true");
             localStorage.setItem("user", JSON.stringify({ username: this.username }));
           }
-          this.$emit("login-success", userData); // 向父组件传递用户数据
+
+          // 设置首次访问标志为 false
+          localStorage.setItem('isFirstVisit', 'false');
+
+          // 触发父组件的 login-success 事件，并传递用户数据
+          this.$emit("login-success", userData);
+
         }
       } catch (error) {
+        console.log(error);
         alert("登录失败，请稍后再试");
       }
     },
 
     goToRegister() {
-      this.$emit("go-to-register");
+      this.$emit('go-to-register'); // 触发事件，通知父组件显示注册页面
     }
   },
   mounted() {
@@ -80,8 +88,8 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(120deg, #36a9da, #2c8db3, #f1f1f1);
-  z-index: 1000; /* 确保在所有内容之上 */
+  background: linear-gradient(120deg, #f7b0d2, #ffb6c1, #f1f1f1); /* 甜美的渐变背景 */
+  z-index: 1000;
 }
 
 .login-container {
@@ -89,9 +97,10 @@ export default {
   max-width: 400px;
   background: #fff;
   padding: 40px;
-  border-radius: 15px;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  border-radius: 20px; /* 更圆润的边角 */
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); /* 轻柔的阴影效果 */
   text-align: center;
+  border: 2px dashed #ff80ab; /* 使用粉色虚线边框 */
 }
 
 /* 标题样式 */
@@ -99,7 +108,8 @@ export default {
   font-size: 2.5rem;
   font-weight: bold;
   margin-bottom: 20px;
-  color: #36a9da;
+  color: #ff80ab; /* 可爱的粉色 */
+  font-family: 'Comic Sans MS', sans-serif; /* 轻松愉快的字体 */
 }
 
 /* 表单样式 */
@@ -111,44 +121,50 @@ export default {
 .login-input {
   padding: 15px;
   margin-bottom: 20px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  border: 2px dashed #ff80ab; /* 虚线边框 */
+  border-radius: 12px; /* 更圆滑的边角 */
   font-size: 1rem;
   outline: none;
   transition: border-color 0.3s;
+  font-family: 'Comic Sans MS', sans-serif;
 }
 
 .login-input:focus {
-  border-color: #2c8db3;
+  border-color: #ff64a3; /* 聚焦时更鲜明的粉色 */
 }
 
 /* 按钮样式 */
 .login-btn {
   padding: 15px;
-  background: #36a9da;
-  color: #fff;
+  background: #ff80ab; /* 甜美的粉色 */
+  color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 1.2rem;
   font-weight: bold;
   cursor: pointer;
   transition: background 0.3s, transform 0.2s;
+  font-family: 'Comic Sans MS', sans-serif;
 }
 
 .login-btn:hover {
-  background: #2c8db3;
+  background: #ff64a3; /* 更亮眼的粉色 */
   transform: translateY(-2px);
+}
+
+.login-btn:active {
+  background: #f06292; /* 按钮点击时的颜色 */
 }
 
 /* 底部文字和链接样式 */
 .login-footer {
   margin-top: 20px;
-  font-size: 0.9rem;
+  font-size: 1rem;
   color: #666;
 }
 
 .register-link {
-  color: #36a9da;
+  color: #ff80ab;
   cursor: pointer;
   text-decoration: none;
   font-weight: bold;
@@ -157,4 +173,5 @@ export default {
 .register-link:hover {
   text-decoration: underline;
 }
+
 </style>

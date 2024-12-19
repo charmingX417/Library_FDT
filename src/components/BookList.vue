@@ -243,13 +243,12 @@ export default {
         return;
       }
 
-      // 使用 nextBookId 生成新的书籍编号
       const bookToAdd = {
-        id: this.nextBookId, // 新书籍的编号
+        id: this.nextBookId,
         ...this.newBook,
         author: this.newBook.author || null,
         isbn: this.newBook.isbn || null,
-        img: this.newBook.img || null, // 图片地址
+        img: this.newBook.img || null,
       };
 
       try {
@@ -290,7 +289,14 @@ export default {
     },
     async deleteBook(book) {
       try {
-        await axios.delete(`http://localhost:3000/api/books/${book.id}`);
+        // 这里更新图书的 isdelete 字段，并设置 delete_at 字段为当前时间
+        const currentTime = new Date().toISOString(); // 获取当前时间并格式化为 ISO 字符串
+        await axios.put(`http://localhost:3000/api/books/${book.id}/delete`, {
+          isdelete: 1,
+          delete_at: currentTime,
+        });
+
+        // 从列表中移除该图书
         this.books = this.books.filter((item) => item.id !== book.id);
         ElMessage.success("书籍删除成功！");
       } catch (error) {

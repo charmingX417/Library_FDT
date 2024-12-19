@@ -43,13 +43,13 @@ export default {
         datasets: [
           {
             label: "图书分类数量",
-            data: [],
+            data: [],  // 存储图表的数据
             backgroundColor: [], // 动态生成颜色
             borderWidth: 1,
           },
         ],
       },
-      totalBooks: 0, // 新增字段来存储总书本数
+      totalBooks: 0, // 存储总书本数
       chartOptions: {
         responsive: true,
         maintainAspectRatio: true,
@@ -76,6 +76,14 @@ export default {
         hover: {
           mode: "nearest",
           intersect: true,
+        },
+        // 设置切割部分，形成环形效果
+        cutout: "50%",  // 中心空心部分的比例
+        elements: {
+          arc: {
+            borderWidth: 2, // 设置每个扇形的边框宽度
+            borderColor: 'white', // 设置每个扇形的边框颜色
+          },
         },
       },
       isDataLoaded: false, // 数据加载完成标志
@@ -112,7 +120,11 @@ export default {
         const response = await axios.get("http://localhost:3000/api/books");
         if (response.data && Array.isArray(response.data)) {
           const categoryCounts = {};
-          response.data.forEach((book) => {
+
+          // 筛选掉 isdelete 为 1 的书籍
+          const validBooks = response.data.filter((book) => book.isdelete !== 1);
+
+          validBooks.forEach((book) => {
             const category = book.category;
             if (category) {
               categoryCounts[category] = (categoryCounts[category] || 0) + 1;

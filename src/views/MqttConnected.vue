@@ -1,6 +1,6 @@
 <template>
   <div class="backup-restore-page">
-    <h2>数据监控与展示</h2>
+    <h1>数据监控与展示</h1>
     <el-divider></el-divider>
 
     <!-- MQTT 连接状态 -->
@@ -12,7 +12,7 @@
 
     <!-- 实时接收的文字数据 -->
     <div class="text-section">
-      <h3>实时文字数据</h3>
+      <h2>实时文字数据</h2>
       <el-scrollbar class="text-display">
         <ul>
           <li v-for="(msg, index) in messages" :key="index">{{ msg }}</li>
@@ -83,7 +83,8 @@ export default {
       }
     },
     handleTextMessage(message) {
-      this.messages.push(message);
+      const now = new Date().toLocaleTimeString();  // 获取当前时间戳
+      this.messages.push({ text: message, time: now });  // 保存消息和时间戳
       try {
         const data = JSON.parse(message);
         if (data.temperature) {
@@ -109,28 +110,103 @@ export default {
 
 <style>
 .backup-restore-page {
-  padding: 20px;
+  padding: 30px;
+  background: rgba(255, 255, 255, 0.25); /* 让容器稍微透明 */
+  border-radius: 15px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  font-family: 'Comic Sans MS', cursive, sans-serif; /* 可爱的字体 */
 }
 
 .connection-status {
   margin-bottom: 20px;
-  font-size: 18px;
-  color: #42b983;
+  font-size: 20px;
+  color: #00FF00 !important; /* 强制使用亮绿色 */
+  font-weight: bold;
+  text-align: center;
 }
 
 .text-section {
-  margin-bottom: 20px;
+  margin-bottom: 30px;
 }
 
 .text-display {
   max-height: 200px;
   overflow-y: auto;
-  border: 1px solid #dcdcdc;
-  border-radius: 4px;
-  padding: 10px;
+  border: 1px solid #FFB6C1; /* 浅粉色边框 */
+  border-radius: 10px;
+  padding: 15px;
+  background-color: #FFF0F5; /* 浅粉色背景 */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.text-display li {
+  color: #FF1493; /* 亮粉色文字 */
+  font-size: 16px;
+  margin-bottom: 10px;
+  padding: 5px;
+  border-radius: 8px;
+  background-color: #FFF5EE; /* 浅蜜色背景 */
+  transition: background-color 0.3s ease;
+}
+
+.text-display li:hover {
+  background-color: #FFD1DC; /* 柔和的粉色，增强互动感 */
 }
 
 .chart-section {
-  margin-top: 20px;
+  margin-top: 30px;
+  background: #FCE4EC; /* 柔和的淡桃色背景，更适合与粉色搭配 */
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+  text-align: left;
+  color: #05fbcd; /* 亮粉色字体 */
+  margin-bottom: 20px;
+}
+
+h1{
+  font-size: 35px;
+  color: #ffb3e5;
+}
+h2 {
+  font-size: 28px;
+}
+
+h3 {
+  font-size: 25px;
+  margin-bottom: 15px;
+}
+
+.el-divider {
+  border-color: #FFB6C1; /* 浅粉色分隔线 */
+}
+
+.el-row {
+  display: flex;
+  justify-content: center;
+}
+
+.el-col {
+  max-width: 600px;
+}
+
+.el-card {
+  background-color: #FFF0F5; /* 浅粉色背景 */
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.el-scrollbar {
+  padding: 0 10px;
 }
 </style>
+
+
+
+
+
+

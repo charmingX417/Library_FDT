@@ -8,10 +8,15 @@
 
 body {
     font-family: 'Arial', sans-serif;
-    background: linear-gradient(135deg, #f0f8ff, #e6e6fa);
+    background: rgba(255, 255, 255, 0.9); /* 白色半透明背景 */
+    backdrop-filter: blur(10px); /* 添加模糊效果 */
     padding: 20px;
     box-sizing: border-box;
     scroll-behavior: smooth;
+    height: 100%;  /* 确保页面占满整个视口 */
+    margin: 0;  /* 清除默认的外边距 */
+    padding: 0;  /* 清除默认的内边距 */
+    overflow: auto;  /* 页面可滚动 */
 }
 
 .container {
@@ -22,6 +27,10 @@ body {
     justify-content: space-around;
 }
 
+/* 全局容器样式 */
+.el-container {
+    background-color: transparent; /* 确保容器背景透明 */
+}
 .el-card {
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);

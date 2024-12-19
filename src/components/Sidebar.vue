@@ -41,13 +41,6 @@
           :style="getItemStyle('search', activeIndex === '/search')"
           @click="handleMenuClick('/search')"
       >图书查询</el-menu-item>
-      <el-menu-item
-          index="/backup-restore"
-          @mouseover="hover = 'backup-restore'"
-          @mouseleave="hover = null"
-          :style="getItemStyle('backup-restore', activeIndex === '/backup-restore')"
-          @click="handleMenuClick('/backup-restore')"
-      >数据备份与恢复</el-menu-item>
     </el-menu>
     <!-- 主题切换按钮 -->
     <el-button class="theme-toggle" @click="toggleTheme">切换主题</el-button>

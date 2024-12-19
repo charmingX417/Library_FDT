@@ -97,21 +97,28 @@ app.put('/api/books/:id', (req, res) => {
     });
 });
 
-// 删除图书信息
-app.delete('/api/books/:id', (req, res) => {
+// 更新图书删除状态
+app.put('/api/books/:id/delete', (req, res) => {
     const bookId = req.params.id; // 从路径参数中获取书籍编号
+    const { isdelete, delete_at } = req.body; // 从请求体中获取更新的字段
 
-    // SQL 查询以删除指定 ID 的书籍
-    const sql = 'DELETE FROM books WHERE id = ?';
-    db.query(sql, [bookId], (err, result) => {
+    if (isdelete === undefined || !delete_at) {
+        return res.status(400).send("缺少必要的参数");
+    }
+
+    // 获取当前时间
+    const currentTime = new Date().toISOString(); // 获取当前时间并格式化为 ISO 字符串
+
+    // 更新图书的 isdelete, delete_at 和 update_at 字段
+    const sql = 'UPDATE books SET isdelete = ?, delete_at = ?, updated_at = ? WHERE id = ?';
+    db.query(sql, [isdelete, delete_at, currentTime, bookId], (err, result) => {
         if (err) {
-            console.error('删除书籍失败:', err);
-            res.status(500).send('删除书籍失败');
+            console.error('更新删除状态失败:', err);
+            res.status(500).send('更新删除状态失败');
             return;
         }
 
         if (result.affectedRows === 0) {
-            // 如果没有匹配的书籍 ID
             return res.status(404).send('书籍不存在');
         }
 
@@ -255,49 +262,85 @@ app.post('/api/login', (req, res) => {
         });
     });
 });
+
 // 借书接口
 app.post('/api/borrowBook', (req, res) => {
-    const { userId, bookId } = req.body;
+    const { username, bookId } = req.body;
 
-    // 查询用户已借书数量
-    const borrowCountQuery = 'SELECT COUNT(*) AS count FROM borrowed_books WHERE user_id = ?';
-    db.query(borrowCountQuery, [userId], (err, countResults) => {
+    console.log('请求参数:', req.body); // 打印请求参数
+    const borrower = username; // 兼容变量
+
+    // 通过用户名查询用户ID
+    const getUserIdQuery = 'SELECT id FROM users WHERE username = ?';
+    db.query(getUserIdQuery, [borrower], (err, userResults) => {
         if (err) {
-            console.error('查询借书数量失败:', err);
+            console.error('查询用户ID失败:', err);
             return res.status(500).send('服务器错误');
         }
 
-        const borrowedCount = countResults[0].count;
+        console.log('用户查询结果:', userResults);
 
-        if (borrowedCount >= 5) {
-            return res.status(400).send('借书数量已达到上限（5 本）');
+        if (userResults.length === 0) {
+            console.log('借书人不存在的错误被触发');
+            return res.status(401).send('借书人不存在');
         }
 
-        // 检查书籍是否已借出
-        const bookAvailabilityQuery = 'SELECT * FROM borrowed_books WHERE book_id = ?';
-        db.query(bookAvailabilityQuery, [bookId], (err, bookResults) => {
+        const userId = userResults[0].id; // 获取用户ID
+
+        // 查询用户已借书数量
+        const borrowCountQuery = 'SELECT COUNT(*) AS count FROM borrowed_books WHERE user_id = ?';
+        db.query(borrowCountQuery, [userId], (err, countResults) => {
             if (err) {
-                console.error('查询书籍状态失败:', err);
+                console.error('查询借书数量失败:', err);
                 return res.status(500).send('服务器错误');
             }
 
-            if (bookResults.length > 0) {
-                return res.status(400).send('书籍已被借出');
+            const borrowedCount = countResults[0].count;
+
+            if (borrowedCount >= 5) {
+                console.log('借书数量已达到上限的错误被触发');
+                return res.status(402).send('借书数量已达到上限（5 本）');
             }
 
-            // 插入借书记录
-            const borrowInsertQuery = 'INSERT INTO borrowed_books (user_id, book_id) VALUES (?, ?)';
-            db.query(borrowInsertQuery, [userId, bookId], (err) => {
+            // 检查书籍是否已借出
+            const bookAvailabilityQuery = 'SELECT * FROM borrowed_books WHERE book_id = ?';
+            db.query(bookAvailabilityQuery, [bookId], (err, bookResults) => {
                 if (err) {
-                    console.error('借书失败:', err);
+                    console.error('查询书籍状态失败:', err);
                     return res.status(500).send('服务器错误');
                 }
 
-                res.status(200).send('借书成功');
+                if (bookResults.length > 0) {
+                    console.log('书籍已被借出的错误被触发');
+                    return res.status(403).send('书籍已被借出');
+                }
+
+                // 插入借书记录，确保使用 borrowed_at 字段
+                const borrowInsertQuery = 'INSERT INTO borrowed_books (user_id, book_id, borrowed_at) VALUES (?, ?, ?)';
+                const borrowTime = new Date().toISOString().slice(0, 19).replace('T', ' '); // 获取当前时间
+
+                db.query(borrowInsertQuery, [userId, bookId, borrowTime], (err) => {
+                    if (err) {
+                        console.error('借书失败:', err);
+                        return res.status(500).send('服务器错误');
+                    }
+
+                    // 更新书籍状态为已借出
+                    const updateBookStatusQuery = 'UPDATE books SET isBorrowed = 1 WHERE id = ?';
+                    db.query(updateBookStatusQuery, [bookId], (err) => {
+                        if (err) {
+                            console.error('更新书籍状态失败:', err);
+                            return res.status(500).send('服务器错误');
+                        }
+
+                        res.status(200).send('借书成功');
+                    });
+                });
             });
         });
     });
 });
+
 // 还书接口
 app.post('/api/returnBook', (req, res) => {
     const { userId, bookId } = req.body;
@@ -316,6 +359,7 @@ app.post('/api/returnBook', (req, res) => {
         res.status(200).send('还书成功');
     });
 });
+
 // 用户注册接口
 app.post('/api/register', async (req, res) => {
     const { username, password } = req.body;
@@ -354,6 +398,164 @@ app.post('/api/register', async (req, res) => {
             console.error('密码加密失败:', hashError);
             res.status(500).send('服务器错误');
         }
+    });
+});
+
+// 用户注销接口（带未还书籍检查）
+app.post('/api/deleteUser', (req, res) => {
+    const { userId } = req.body;
+
+    if (!userId) {
+        return res.status(400).send('用户 ID 不能为空');
+    }
+
+    // 检查用户是否有未归还的借书记录
+    const checkUnreturnedBooksQuery = 'SELECT COUNT(*) AS count FROM borrowed_books WHERE user_id = ?';
+    db.query(checkUnreturnedBooksQuery, [userId], (err, results) => {
+        if (err) {
+            console.error('检查未归还书籍失败:', err);
+            return res.status(500).send('服务器错误');
+        }
+
+        const unreturnedCount = results[0].count;
+
+        if (unreturnedCount > 0) {
+            return res.status(400).send(`用户有未归还的书籍，共计 ${unreturnedCount} 本，请先归还书籍后再注销账户`);
+        }
+
+        // 开启事务，删除用户和相关数据
+        db.beginTransaction((err) => {
+            if (err) {
+                console.error('事务开启失败:', err);
+                return res.status(500).send('服务器错误');
+            }
+
+            // 删除与用户相关的借书记录
+            const deleteBorrowedBooksQuery = 'DELETE FROM borrowed_books WHERE user_id = ?';
+            db.query(deleteBorrowedBooksQuery, [userId], (err) => {
+                if (err) {
+                    console.error('删除借书记录失败:', err);
+                    return db.rollback(() => res.status(500).send('服务器错误'));
+                }
+
+                // 删除用户账户信息
+                const deleteUserQuery = 'DELETE FROM users WHERE id = ?';
+                db.query(deleteUserQuery, [userId], (err, result) => {
+                    if (err) {
+                        console.error('删除用户账户失败:', err);
+                        return db.rollback(() => res.status(500).send('服务器错误'));
+                    }
+
+                    if (result.affectedRows === 0) {
+                        return db.rollback(() => res.status(400).send('用户不存在'));
+                    }
+
+                    // 提交事务
+                    db.commit((err) => {
+                        if (err) {
+                            console.error('事务提交失败:', err);
+                            return db.rollback(() => res.status(500).send('服务器错误'));
+                        }
+
+                        res.status(200).send('用户注销成功');
+                    });
+                });
+            });
+        });
+    });
+});
+
+// 查询所有用户信息   及借书情况，包括借书时间
+app.get('/api/users', (req, res) => {
+    const query = `
+        SELECT
+            u.id AS userId,
+            u.username,
+            u.age,
+            u.sex,
+            u.signature,
+            GROUP_CONCAT(bb.book_id) AS borrowedBookIds,
+            GROUP_CONCAT(b.title) AS borrowedBookTitles,
+            GROUP_CONCAT(bb.borrowed_at) AS borrowedAtDates
+        FROM users u
+                 LEFT JOIN borrowed_books bb ON u.id = bb.user_id
+                 LEFT JOIN books b ON bb.book_id = b.id
+        GROUP BY u.id;
+    `;
+
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error('查询用户信息失败:', err);
+            return res.status(500).send('服务器错误');
+        }
+
+        const formattedResults = results.map((row) => ({
+            userId: row.userId,
+            username: row.username,
+            age: row.age,
+            sex: row.sex,
+            signature: row.signature,
+            borrowedBooks: row.borrowedBookIds
+                ? row.borrowedBookIds.split(',').map((bookId, index) => ({
+                    bookId: parseInt(bookId, 10),
+                    title: row.borrowedBookTitles.split(',')[index],
+                    borrowedAt: row.borrowedAtDates.split(',')[index], // 借书时间
+                }))
+                : [],
+        }));
+
+        res.json(formattedResults);
+    });
+});
+
+// 获取特定用户的借书记录及借书时间
+app.get('/api/user-borrowed-books/:id', (req, res) => {
+    const userId = req.params.id;
+
+    const query = `
+        SELECT 
+            bb.book_id AS bookId,
+            b.title AS title,
+            bb.borrowed_at AS borrowedAt
+        FROM borrowed_books bb
+        LEFT JOIN books b ON bb.book_id = b.id
+        WHERE bb.user_id = ?;
+    `;
+
+    db.query(query, [userId], (err, results) => {
+        if (err) {
+            console.error('查询借书记录失败:', err);
+            return res.status(500).send('服务器错误');
+        }
+
+        res.json({ borrowedBooks: results });
+    });
+});
+
+// 获取所有借书记录的接口
+app.get('/api/borrowRecords', (req, res) => {
+    const query = `
+    SELECT
+      borrowed_books.id,
+      borrowed_books.user_id,
+      borrowed_books.book_id,
+      borrowed_books.borrowed_at,
+      borrowed_books.returned_at,
+      users.username,
+      books.title AS bookTitle
+    FROM borrowed_books
+    JOIN users ON borrowed_books.user_id = users.id
+    JOIN books ON borrowed_books.book_id = books.id
+  `;
+
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error('查询借书记录失败:', err);
+            return res.status(500).send('服务器错误');
+        }
+
+        // 返回借书记录
+        res.status(200).json(results);
     });
 });
 

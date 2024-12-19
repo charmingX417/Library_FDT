@@ -1,28 +1,26 @@
 <template>
-  <div class="loading-container">
-    <div class="loading-animation">
-      <div class="spinner"></div>
-    </div>
-    <p>加载中，请稍候...</p>
+  <div class="loading-container" :class="{ 'fade-out': isFadingOut }">
+    <div class="loading-icon"></div>
+    <p class="loading-text">加载中...</p>
   </div>
 </template>
 
 <script>
-import { onMounted } from "vue";
-import { gsap } from "gsap";
+import { onMounted, ref } from "vue";
 
 export default {
   name: "Loading",
   setup() {
+    const isFadingOut = ref(false);
+
     onMounted(() => {
-      // GSAP 动画：旋转加载动画
-      gsap.to(".spinner", {
-        rotation: 360,
-        duration: 1,
-        repeat: -1,
-        ease: "linear",
-      });
+      // 3秒后开始淡出
+      setTimeout(() => {
+        isFadingOut.value = true;
+      }, 3000);
     });
+
+    return { isFadingOut };
   },
 };
 </script>
@@ -30,24 +28,56 @@ export default {
 <style scoped>
 .loading-container {
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background: linear-gradient(to bottom, #141e30, #243b55);
-  color: white;
-  font-size: 20px;
+  background-color: #ffebf2; /* 柔和的粉色背景 */
+  opacity: 1;
+  transition: opacity 1.5s ease-out;
+  flex-direction: column;
 }
 
-.loading-animation {
-  margin-bottom: 20px;
-}
-
-.spinner {
-  width: 50px;
-  height: 50px;
-  border: 5px solid rgba(255, 255, 255, 0.3);
-  border-top: 5px solid #fff;
+.loading-icon {
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
+  border: 5px solid #ff80ab; /* 活力的粉色 */
+  border-top: 5px solid transparent;
+  margin-bottom: 20px;
+  animation: spin 2s linear infinite, bounce 1.5s ease-in-out infinite;
+}
+
+.loading-text {
+  font-size: 2rem;
+  color: #ff80ab;
+  font-family: 'Comic Sans MS', sans-serif;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+
+/* 旋转动画 */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* 弹跳效果 */
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+/* 淡出效果 */
+.fade-out {
+  opacity: 0;
+  transition: opacity 1.5s ease-out;
 }
 </style>
